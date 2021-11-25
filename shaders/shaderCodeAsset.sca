@@ -21,44 +21,39 @@ vec4 main(Texture2d tex, vec2 center, float pivot)
     
     auto l_cp = length(cp);
     
-    if (l_cp == 0.0) {
-       return vec4(0);
-    }
-    
     // aspect-corrected cp
-    
-    // nearest edge point
-    vec2 np;
 
-    auto p00 = vec2(0, 0);
-    auto acp00 = abs(aspect(c - p00));
-    auto p10 = vec2(1, 0);
-    auto acp10 = abs(aspect(c - p10));
-    auto p11 = vec2(1, 1);
-    auto acp11 = abs(aspect(c - p11));
-    auto p01 = vec2(0, 1);
-    auto acp01 = abs(aspect(p - p01));
+    // c# = corner point
+    // ac# = aspect of corner point
+    auto ac = vec4(
+      abs(aspect(p - vec2(0, 0))),
+      abs(aspect(p - vec2(1, 0))),
+      abs(aspect(p - vec2(1, 1))),
+      abs(aspect(p - vec2(0, 1)))
+    );
 
-    if (cp.y >= -cp.x * acp01 && cp.y >= cp.x * acp11) {
-        // +y quadrant
-        np = (1.0 - c.y) * vec2(cp.x / cp.y, 1);
-    } else if (cp.y <= cp.x * acp11 && cp.y >= -cp.x * acp10) {
-        // -x quadrant
-        np = (1.0 - c.x) * vec2(1.0, cp.y / cp.x);
-    } else if (cp.y <= -cp.x * acp10 && cp.y <= cp.x * acp00) {
-        // -y quadrant
-        np = -c.y * vec2(cp.x / cp.y, 1);
-    } else if (cp.y >= cp.x * acp00 && cp.y <= -cp.x * acp01 ) {
-        // +x quadrant
-        np = -c.x * vec2(1, cp.y / cp.x);
-    }
+    // these are floats that represent bools if the point is in the specified quadrant
+    auto bfs = vec4(
+      cp.y > -cp.x * ac.w && cp.y >=  cp.x * ac.z, // +y
+      cp.y >  cp.x * ac.x && cp.y <= -cp.x * ac.w, // +x
+      cp.y < -cp.x * ac.y && cp.y <=  cp.x * ac.x, // -y
+      cp.y <  cp.x * ac.z && cp.y >= -cp.x * ac.y  // -x
+    );
+   
+    // closest points to the edge in each quadrant
+    auto p0 = bfs.x * (1.0 - c.y) * vec2(cp.x / cp.y, 1);   // +y
+    auto p1 = bfs.y * (0.0 - c.x) * vec2(1, cp.y / cp.x);   // +x
+    auto p2 = bfs.z * (0.0 - c.y) * vec2(cp.x / cp.y, 1);   // -y
+    auto p3 = bfs.w * (1.0 - c.x) * vec2(1.0, cp.y / cp.x); // -x
     
-    
+    // dot product gives us the nearest edge point in this quadrant
+    auto ep = p0 + p1 + p2 + p3;
+
     // progress along cp -> np
-    float t = abs(pivot - l_cp / length(np));
+    float t = abs(pivot - l_cp / length(ep));
     
     // point to sample from
-    vec2 uv = (c + mix(vec2(0), np, t));
+    vec2 uv = (c + mix(vec2(0), ep, t));
     
     return tex.sample(uv);
 }

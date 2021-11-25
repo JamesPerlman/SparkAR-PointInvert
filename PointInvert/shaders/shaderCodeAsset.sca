@@ -1,0 +1,62 @@
+using namespace std;
+
+// Entry point of the shader code asset
+//
+// @return color
+
+#define PI 3.1415926535897932384626433832795
+
+auto aspect(vec2 v)
+{
+  return v.y / v.x;
+}
+
+vec4 main(Texture2d tex, vec2 center, float pivot)
+{
+    auto p = fragment(getVertexTexCoord());
+    
+    auto c = center;
+    
+    auto cp = p - c;
+    
+    auto l_cp = length(cp);
+    
+    if (l_cp == 0.0) {
+       return vec4(0);
+    }
+    
+    // aspect-corrected cp
+
+    // c# = corner point
+    // ac# = aspect of corner point
+    auto ac = vec4(
+      abs(aspect(c - vec2(0, 0))),
+      abs(aspect(c - vec2(1, 0))),
+      abs(aspect(c - vec2(1, 1))),
+      abs(aspect(p - vec2(0, 1))),
+    );
+aoeuaoeu22 2 2
+    auto 
+    if (cp.y >= -cp.x * ac3 && cp.y >= cp.x * ac2) {
+        // +y quadrant
+        np = (1.0 - c.y) * vec2(cp.x / cp.y, 1);
+    } else if (cp.y <= cp.x * ac2 && cp.y >= -cp.x * ac1) {
+        // -x quadrant
+        np = (1.0 - c.x) * vec2(1.0, cp.y / cp.x);
+    } else if (cp.y <= -cp.x * ac1 && cp.y <= cp.x * ac0) {
+        // -y quadrant
+        np = -c.y * vec2(cp.x / cp.y, 1);
+    } else if (cp.y >= cp.x * ac0 && cp.y <= -cp.x * ac3 ) {
+        // +x quadrant
+        np = -c.x * vec2(1, cp.y / cp.x);
+    }
+    
+    
+    // progress along cp -> np
+    float t = abs(pivot - l_cp / length(np));
+    
+    // point to sample from
+    vec2 uv = (c + mix(vec2(0), np, t));
+    
+    return tex.sample(uv);
+}
