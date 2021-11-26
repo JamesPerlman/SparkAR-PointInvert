@@ -8,7 +8,7 @@ using namespace std;
 
 auto aspect(vec2 v)
 {
-  return v.y / v.x;
+  return v.x == 0.0 ? 0.0 : (v.y / v.x);
 }
 
 vec4 main(Texture2d tex, vec2 center, float pivot)
@@ -33,7 +33,7 @@ vec4 main(Texture2d tex, vec2 center, float pivot)
     );
 
     // these are floats that represent bools if the point is in the specified quadrant
-    auto bfs = vec4(
+    auto ifs = vec4(
       cp.y > -cp.x * ac.w && cp.y >=  cp.x * ac.z, // +y
       cp.y >  cp.x * ac.x && cp.y <= -cp.x * ac.w, // +x
       cp.y < -cp.x * ac.y && cp.y <=  cp.x * ac.x, // -y
@@ -41,13 +41,26 @@ vec4 main(Texture2d tex, vec2 center, float pivot)
     );
    
     // closest points to the edge in each quadrant
-    auto p0 = bfs.x * (1.0 - c.y) * vec2(cp.x / cp.y, 1);   // +y
-    auto p1 = bfs.y * (0.0 - c.x) * vec2(1, cp.y / cp.x);   // +x
-    auto p2 = bfs.z * (0.0 - c.y) * vec2(cp.x / cp.y, 1);   // -y
-    auto p3 = bfs.w * (1.0 - c.x) * vec2(1.0, cp.y / cp.x); // -x
+    auto cpa = aspect(cp);
+    auto cpb = aspect(cp.yx);
+    auto cps = vec3(cpa, cpb, 1.0);
+
+    auto ps = mat4(
+       cps.yz00, // +y
+       cps.zx00, // +x
+       cps.yz00, // -y
+       cps.zx00  // -x
+    );
+
+    auto ks = vec4(
+      1.0 - c.y,
+      0.0 - c.x,
+      0.0 - c.y,
+      1.0 - c.x
+    );
     
-    // dot product gives us the nearest edge point in this quadrant
-    auto ep = p0 + p1 + p2 + p3;
+    // nearest edge point in this quadrant
+    auto ep = (ps * (ifs * ks)).xy;
 
     // progress along cp -> np
     float t = abs(pivot - l_cp / length(ep));
